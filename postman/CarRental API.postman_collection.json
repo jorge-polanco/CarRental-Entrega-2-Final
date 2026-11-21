@@ -1,0 +1,121 @@
+{
+  "info": {
+    "_postman_id": "a84291bd-4556-4539-a464-724c97e3da3b",
+    "name": "CarRental API - JWT, ISO Countries and Customers",
+    "description": "Local integration checks for the CarRental API. Set adminUsername/adminPassword in the local environment after registering a user and promoting it with database/02-promote-admin.sql. The token is saved only as a local environment value.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Authentication",
+      "item": [
+        {
+          "name": "Login as local Admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Login returns 200', function () { pm.response.to.have.status(200); });",
+                "if (pm.response.code === 200) {",
+                "  const body = pm.response.json();",
+                "  pm.test('Login returns a bearer token', function () { pm.expect(body.token).to.be.a('string').and.not.empty; });",
+                "  pm.environment.set('jwtToken', body.token);",
+                "}"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "02 - ISO Countries",
+      "item": [
+        {
+          "name": "GET countries",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/IsoCountries", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{jwtToken}}", "type": "string" }] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('GET countries returns 200', function () { pm.response.to.have.status(200); });", "pm.test('Response is a JSON array', function () { pm.expect(pm.response.json()).to.be.an('array'); });"] } }]
+        },
+        {
+          "name": "GET country by id",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/IsoCountries/{{countryId}}", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{jwtToken}}", "type": "string" }] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('GET country by id returns 200', function () { pm.response.to.have.status(200); });", "pm.test('Response contains an ISO country', function () { pm.expect(pm.response.json()).to.have.property('countryId'); });"] } }]
+        },
+        {
+          "name": "POST country",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"iso2Code\": \"QX\",\n  \"iso3Code\": \"QXX\",\n  \"countryName\": \"Postman QA Country\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/IsoCountries",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{jwtToken}}", "type": "string" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('POST country returns 201', function () { pm.response.to.have.status(201); });", "if (pm.response.code === 201) { pm.environment.set('countryId', String(pm.response.json().countryId)); }"] } }]
+        },
+        {
+          "name": "PUT country",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"countryId\": {{countryId}},\n  \"iso2Code\": \"QX\",\n  \"iso3Code\": \"QXX\",\n  \"countryName\": \"Postman QA Country Updated\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/IsoCountries",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{jwtToken}}", "type": "string" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('PUT country returns 204', function () { pm.response.to.have.status(204); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "03 - Customers",
+      "item": [
+        {
+          "name": "GET customers",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/Customers", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{jwtToken}}", "type": "string" }] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('GET customers returns 200', function () { pm.response.to.have.status(200); });", "pm.test('Response is a JSON array', function () { pm.expect(pm.response.json()).to.be.an('array'); });"] } }]
+        },
+        {
+          "name": "POST customer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Postman\",\n  \"lastName\": \"QA\",\n  \"socialSecurityNumber\": \"QA-{{$guid}}\",\n  \"email\": \"qa-{{$guid}}@example.test\",\n  \"countryId\": {{countryId}},\n  \"mobilePhone\": \"5550101000\",\n  \"stateName\": \"Test State\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/Customers",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{jwtToken}}", "type": "string" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('POST customer returns 201', function () { pm.response.to.have.status(201); });", "if (pm.response.code === 201) { pm.environment.set('customerId', String(pm.response.json().idCustomer)); }"] } }]
+        },
+        {
+          "name": "GET customer by id",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/Customers/{{customerId}}", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{jwtToken}}", "type": "string" }] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('GET customer by id returns 200', function () { pm.response.to.have.status(200); });", "pm.test('Response contains the requested customer', function () { pm.expect(pm.response.json()).to.have.property('idCustomer'); });"] } }]
+        },
+        {
+          "name": "PUT customer",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"idCustomer\": {{customerId}},\n  \"firstName\": \"Postman\",\n  \"lastName\": \"QA Updated\",\n  \"socialSecurityNumber\": \"QA-{{$guid}}\",\n  \"email\": \"qa-{{$guid}}@example.test\",\n  \"countryId\": {{countryId}},\n  \"mobilePhone\": \"5550101001\",\n  \"stateName\": \"Test State Updated\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/Customers",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{jwtToken}}", "type": "string" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('PUT customer returns 204', function () { pm.response.to.have.status(204); });"] } }]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5231" },
+    { "key": "countryId", "value": "1" },
+    { "key": "customerId", "value": "" }
+  ]
+}
